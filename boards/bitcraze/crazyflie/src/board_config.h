@@ -88,8 +88,8 @@
 /*
  * I2C busses
  */
-#define PX4_I2C_BUS_ONBOARD_HZ      400000
-#define PX4_I2C_BUS_EXPANSION_HZ      400000
+#define PX4_I2C_BUS_ONBOARD_HZ      100000
+#define PX4_I2C_BUS_EXPANSION_HZ      100000
 
 #define PX4_I2C_BUS_MTD	1
 

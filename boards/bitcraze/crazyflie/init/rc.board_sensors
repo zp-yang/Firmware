@@ -17,7 +17,7 @@ bmi088 -A -R 4 -s start
 bmi088 -G -R 4 -s start
 
 # Possible internal Baro
-bmp388 -I -a 0x77 start
+bmp388 -I -b 3 -a 0x77 start
 bmp388 -I start
 
 # Optical flow deck
