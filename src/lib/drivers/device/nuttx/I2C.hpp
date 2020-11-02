@@ -113,7 +113,7 @@ protected:
 private:
 	static unsigned	int	_bus_clocks[PX4_NUMBER_I2C_BUSES];
 
-	const uint32_t		_frequency;
+	const uint32_t		_frequency = 400000;
 	i2c_master_s		*_dev{nullptr};
 
 };
