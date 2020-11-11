@@ -53,10 +53,8 @@ I2CSPIDriverBase *BMP388::instantiate(const BusCLIArguments &cli, const BusInsta
 {
 	IBMP388 *interface = nullptr;
 
-	int i2c_bus_frequency = 400000; //400k HZ to mactch crazyflie i2c, can't find where this is set
-
 	if (iterator.busType() == BOARD_I2C_BUS) {
-		interface = bmp388_i2c_interface(iterator.bus(), cli.i2c_address, i2c_bus_frequency);
+		interface = bmp388_i2c_interface(iterator.bus(), cli.i2c_address, cli.bus_frequency);
 
 	} else if (iterator.busType() == BOARD_SPI_BUS) {
 		interface = bmp388_spi_interface(iterator.bus(), iterator.devid(), cli.bus_frequency, cli.spi_mode);
