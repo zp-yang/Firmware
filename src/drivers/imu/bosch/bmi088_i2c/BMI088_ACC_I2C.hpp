@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Bosch_BMI088_Accelerometer_Register.hpp"
+#include "Bosch_BMI088_Accelerometer_Registers.hpp"
 
 #include "BMI088_I2C.hpp"
 
@@ -45,7 +45,7 @@ private:
 	{
 		Register reg;
 		uint8_t set_bits{0};
-		uint8_t clear_btis{0};
+		uint8_t clear_bits{0};
 		
 	};
 
@@ -57,7 +57,7 @@ private:
 	void ConfigureFIFOWatermark(uint8_t samples);
 
 
-	static int DataReadyinterruptCallback(int irq, void *context, void *arg);
+	static int DataReadyInterruptCallback(int irq, void *context, void *arg);
 	void DataReady();
 	bool DataReadyInterruptConfigure();
 	bool DataReadyInterruptDisable();
@@ -66,7 +66,7 @@ private:
 
 	uint8_t RegisterRead(Register reg);
 	void RegisterWrite(Register reg, uint8_t value);
-	void RegisterSetAndCleaerBits(Register reg, uint8_t setbits, uint8_t clearbits);
+	void RegisterSetAndClearBits(Register reg, uint8_t setbits, uint8_t clearbits);
 
 	uint16_t FIFOReadCount();
 	bool FIFORead(const hrt_abstime &timestamp_sample, uint8_t samples);
@@ -84,7 +84,7 @@ private:
 	perf_counter_t _fifo_reset_perf{perf_alloc(PC_COUNT, MODULE_NAME"_accel: FIFO reset")};
 	perf_counter_t _drdy_missed_perf{nullptr};
 
-	uint8_t _fifo_accel_smaples{static_cast<uint8_t>(_fifo_empty_interval_us / (1000000 / ACCEL_RATE))};
+	uint8_t _fifo_accel_samples{static_cast<uint8_t>(_fifo_empty_interval_us / (1000000 / ACCEL_RATE))};
 
 	uint8_t _checked_register{0};
 	static constexpr uint8_t size_register_cfg{10};

@@ -12,11 +12,11 @@ adc start
 # 	lps25h -I -b 3 start
 # fi
 
-# Internal SPI BMI088
-bmi088 -A -R 4 -s start
-bmi088 -G -R 4 -s start
+# Internal I2C BMI088
+bmi088_i2c -I -A -b 3 -a 0x18 -R 4 -f 400 start
+bmi088_i2c -I -G -b 3 -a 0x69 -R 4 -f 400 start
 
-# Possible internal Baro
+# Internal Baro
 bmp388 -I -b 3 -a 0x77 -f 400 start
 bmp388 -I start
 

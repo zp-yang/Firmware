@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2017 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2019-2020 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,20 +31,24 @@
 #
 ############################################################################
 
-add_subdirectory(adis16448)
-add_subdirectory(adis16477)
-add_subdirectory(adis16497)
-add_subdirectory(bma180)
-add_subdirectory(bmi055)
-add_subdirectory(bmi088)
-add_subdirectory(bmi088_i2c)
-add_subdirectory(bmi160)
-add_subdirectory(fxas21002c)
-add_subdirectory(fxos8701cq)
-add_subdirectory(icm20948)
-add_subdirectory(invensense)
-add_subdirectory(l3gd20)
-add_subdirectory(lsm303d)
-add_subdirectory(mpu6000)
-add_subdirectory(mpu9250)
-add_subdirectory(st)
+px4_add_module(
+	MODULE drivers__imu__bosch__bmi088_i2c
+	MAIN bmi088_i2c
+	COMPILE_FLAGS
+	SRCS
+		Bosch_BMI088_Accelerometer_Registers.hpp
+		Bosch_BMI088_Gyroscope_Registers.hpp
+
+		BMI088_I2C.cpp
+		BMI088_I2C.hpp
+		BMI088_ACC_I2C.cpp
+		BMI088_ACC_I2C.hpp
+		BMI088_GYR_I2C.cpp
+		BMI088_GYR_I2C.hpp
+
+		bmi088_i2c_main.cpp
+	DEPENDS
+		drivers_accelerometer
+		drivers_gyroscope
+		px4_work_queue
+	)

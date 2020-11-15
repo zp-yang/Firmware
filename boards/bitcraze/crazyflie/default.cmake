@@ -9,13 +9,10 @@ px4_add_board(
 	#CONSTRAINED_FLASH
 	DRIVERS
 		adc
-		barometer/lps25h
 		barometer/bmp388
 		distance_sensor/vl53l0x
 		gps
-		magnetometer/akm/ak8963
-		imu/invensense/mpu9250
-		imu/bosch/bmi088
+		imu/bosch/bmi088_i2c
 		optical_flow/pmw3901
 		pwm_out
 	MODULES

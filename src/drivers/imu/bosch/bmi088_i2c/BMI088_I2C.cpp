@@ -36,17 +36,17 @@
 #include "BMI088_ACC_I2C.hpp"
 #include "BMI088_GYR_I2C.hpp"
 
-I2CSPIDriverBase *BMI088_I2C::instantiate(const BusCLIArgument &cli, const BusInstanceIterator &iterator, int runtime_instance)
+I2CSPIDriverBase *BMI088_I2C::instantiate(const BusCLIArguments &cli, const BusInstanceIterator &iterator, int runtime_instance)
 {
 	BMI088_I2C *instance = nullptr;
 
 	if (cli.type == DRV_ACC_DEVTYPE_BMI088) {
 		instance = new Bosch::BMI088::Accelerometer::BMI088_ACC_I2C(iterator.configuredBusOption(), iterator.bus(),
-				iterator.devid(), cli.rotation, cli.bus_frequency, cli.address, iterator.DRDYGPIO());
+				iterator.devid(), cli.rotation, cli.bus_frequency, cli.i2c_address, iterator.DRDYGPIO());
 
 	} else if (cli.type == DRV_GYR_DEVTYPE_BMI088) {
 		instance = new Bosch::BMI088::Gyroscope::BMI088_GYR_I2C(iterator.configuredBusOption(), iterator.bus(),
-				iterator.devid(), cli.rotation, cli.bus_frequency, cli.address, iterator.DRDYGPIO());
+				iterator.devid(), cli.rotation, cli.bus_frequency, cli.i2c_address, iterator.DRDYGPIO());
 	}
 
 	if (!instance) {
@@ -70,7 +70,7 @@ BMI088_I2C::BMI088_I2C(uint8_t devtype, const char *name, I2CSPIBusOption bus_op
 {
 }
 
-int BMI088::init()
+int BMI088_I2C::init()
 {
 	int ret = I2C::init();
 
@@ -82,7 +82,7 @@ int BMI088::init()
 	return Reset() ? 0 : -1;
 }
 
-bool BMI088::Reset()
+bool BMI088_I2C::Reset()
 {
 	_state = STATE::RESET;
 	ScheduleClear();

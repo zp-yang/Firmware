@@ -7,13 +7,13 @@ using namespace time_literals;
 namespace Bosch::BMI088::Accelerometer
 {
 
-BMI088_ACC_I2C::BMI088_ACC_I2C(I2CSPIBusOption bus_option, int bus, uint32 device, enum Rotation rotation,
+BMI088_ACC_I2C::BMI088_ACC_I2C(I2CSPIBusOption bus_option, int bus, uint32_t device, enum Rotation rotation,
 						int bus_frequency, int address, spi_drdy_gpio_t drdy_gpio) :
-	BMI088_I2C(DRV_ACC_DEVTYPE_BMI088, 'BMI088 Accelerometer', bus_option, bus, device, address, bus_frequency, drdy_gpio),
+	BMI088_I2C(DRV_ACC_DEVTYPE_BMI088, "BMI088 Accel", bus_option, bus, device, address, bus_frequency, drdy_gpio),
 	_px4_accel(get_device_id(), ORB_PRIO_HIGH, rotation)
 {
 	if (drdy_gpio != 0) {
-		_drdy_interval_perf = perf_alloc(PC_INTERVAL, MODULE_NAME"_accel: DRDY interval");
+		_drdy_missed_perf = perf_alloc(PC_COUNT, MODULE_NAME"_accel: DRDY missed");
 	}
 	ConfigureSampleRate(_px4_accel.get_max_rate_hz());
 }
@@ -25,7 +25,7 @@ BMI088_ACC_I2C::~BMI088_ACC_I2C()
 	perf_free(_fifo_empty_perf);
 	perf_free(_fifo_overflow_perf);
 	perf_free(_fifo_reset_perf);
-	perf_free(_drdy_interval_perf);
+	perf_free(_drdy_missed_perf);
 }
 
 void BMI088_ACC_I2C::exit_and_cleanup()
@@ -45,7 +45,7 @@ void BMI088_ACC_I2C::print_status()
 	perf_print_counter(_fifo_empty_perf);
 	perf_print_counter(_fifo_overflow_perf);
 	perf_print_counter(_fifo_reset_perf);
-	perf_print_counter(_drdy_interval_perf);
+	perf_print_counter(_drdy_missed_perf);
 }
 
 int BMI088_ACC_I2C::probe()
@@ -53,7 +53,7 @@ int BMI088_ACC_I2C::probe()
 	const uint8_t ACC_CHIP_ID = RegisterRead(Register::ACC_CHIP_ID);
 
 	if (ACC_CHIP_ID != ID) {
-		DEVICE_DEBUGG("unexpected ACC_CHIP_ID 0x%02x", ACC_CHIP_ID);
+		DEVICE_DEBUG("unexpected ACC_CHIP_ID 0x%02x", ACC_CHIP_ID);
 		return PX4_ERROR;
 	}
 	return PX4_OK;
@@ -136,9 +136,9 @@ void BMI088_ACC_I2C::RunImpl()
 
 			if (_data_ready_interrupt_enabled) {
 				// scheduled from interrupt if _drdy_fifo_read_samples was set
-				if (_drdy_fifo_read_samples.fetch_and(0) == _fifo_accel_samples) {
+				if (_drdy_fifo_read_samples.fetch_and(0) != _fifo_accel_samples) {
 					samples = _fifo_accel_samples;
-					perf_count_interval(_drdy_interval_perf, now);
+					perf_count(_drdy_missed_perf);
 				}
 
 				// push backup schedule back
@@ -249,7 +249,7 @@ void BMI088_ACC_I2C::ConfigureSampleRate(int sample_rate)
 	ConfigureFIFOWatermark(_fifo_accel_samples);
 }
 
-void BMI088_ACC_I2C::ConfigureFIFOWatermark(uint8_t smaples)
+void BMI088_ACC_I2C::ConfigureFIFOWatermark(uint8_t samples)
 {
 	// FIFO_WTM: 13 bit FIFO watermark level value
 	// unit of the fifo watermark is one byte
@@ -287,11 +287,12 @@ bool BMI088_ACC_I2C::Configure()
 
 	ConfigureAccel();
 
-	return success;}
+	return success;
+}
 
 int BMI088_ACC_I2C::DataReadyInterruptCallback(int irq, void *context, void *arg)
 {
-	static_cast<BMI088_Accelerometer *>(arg)->DataReady();
+	static_cast<BMI088_ACC_I2C *>(arg)->DataReady();
 	return 0;
 }
 
@@ -344,35 +345,45 @@ bool BMI088_ACC_I2C::RegisterCheck(const register_config_t &reg_cfg)
 
 uint8_t BMI088_ACC_I2C::RegisterRead(Register reg)
 {
-	// This function need to be adjusted according to data sheet and how i2c works on bmi088
-
+	uint8_t cmd = static_cast<uint8_t>(reg);
+	uint8_t value = 0;
+	transfer(&cmd, 1, &value, 1);
+	return value;
 }
 
 void BMI088_ACC_I2C::RegisterWrite(Register reg, uint8_t value)
 {
-	// Same as above ^^^
-
+	uint8_t cmd[2];
+	cmd[0] = static_cast<uint8_t>(reg);
+	cmd[1] = value;
+	transfer(cmd, sizeof(cmd), nullptr, 0);
 }
 
-void BMI088_ACC_I2C::RegisterSetAndCleaerBits(Register reg, uint8_t setbits, uint8_t clearbits)
+void BMI088_ACC_I2C::RegisterSetAndClearBits(Register reg, uint8_t setbits, uint8_t clearbits)
 {
-	// Same as above ^^^
+	const uint8_t orig_val = RegisterRead(reg);
+
+	uint8_t val = (orig_val & ~clearbits) | setbits;
+
+	if (orig_val != val) {
+		RegisterWrite(reg, val);
+	}
 }
 
-uint16_t BMI088_ACC_I2C::FIFOReadCount()
+uint16_t BMI088_ACC_I2C::FIFOReadCount() // i2c modification of transfer()
 {
 	// FIFO length registers FIFO_LENGTH_1 and FIFO_LENGTH_0 contain the 14 bit FIFO byte
-	uint8_t fifo_len_buf[4] {};
+	uint8_t fifo_len_buf[3] {};
 	fifo_len_buf[0] = static_cast<uint8_t>(Register::FIFO_LENGTH_0) | DIR_READ;
 	// fifo_len_buf[1] dummy byte
 
-	if (transfer(&fifo_len_buf[0], &fifo_len_buf[0], sizeof(fifo_len_buf)) != PX4_OK) {
+	if (transfer(&fifo_len_buf[0], 1, &fifo_len_buf[0], sizeof(fifo_len_buf)) != PX4_OK) {
 		perf_count(_bad_transfer_perf);
 		return 0;
 	}
 
-	const uint8_t FIFO_LENGTH_0 = fifo_len_buf[2];        // fifo_byte_counter[7:0]
-	const uint8_t FIFO_LENGTH_1 = fifo_len_buf[3] & 0x3F; // fifo_byte_counter[13:8]
+	const uint8_t FIFO_LENGTH_0 = fifo_len_buf[1];        // fifo_byte_counter[7:0]
+	const uint8_t FIFO_LENGTH_1 = fifo_len_buf[2] & 0x3F; // fifo_byte_counter[13:8]
 
 	const uint16_t fifo_byte_counter = combine(FIFO_LENGTH_1, FIFO_LENGTH_0);
 
@@ -389,7 +400,7 @@ bool BMI088_ACC_I2C::FIFORead(const hrt_abstime &timestamp_sample, uint8_t sampl
 	FIFOTransferBuffer buffer{};
 	const size_t transfer_size = math::min(samples * sizeof(FIFO::DATA) + 4, FIFO::SIZE);
 
-	if (transfer((uint8_t *)&buffer, (uint8_t *)&buffer, transfer_size) != PX4_OK) {
+	if (transfer((uint8_t *)&buffer, 1, (uint8_t *)&buffer, transfer_size) != PX4_OK) {
 		perf_count(_bad_transfer_perf);
 		return false;
 	}
@@ -502,7 +513,7 @@ void BMI088_ACC_I2C::UpdateTemperature()
 	temperature_buf[0] = static_cast<uint8_t>(Register::TEMP_MSB) | DIR_READ;
 	// temperature_buf[1] dummy byte
 
-	if (transfer(&temperature_buf[0], &temperature_buf[0], sizeof(temperature_buf)) != PX4_OK) {
+	if (transfer(&temperature_buf[0], 1, &temperature_buf[0], sizeof(temperature_buf)) != PX4_OK) {
 		return;
 	}
 

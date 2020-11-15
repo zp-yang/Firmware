@@ -47,7 +47,7 @@ static constexpr uint8_t Bit6 = (1 << 6);
 static constexpr uint8_t Bit7 = (1 << 7);
 
 static constexpr uint32_t SPI_SPEED = 10 * 1000 * 1000; // 10MHz SPI serial interface
-static constexpr uint8_t DIR_READ = 0x80;
+static constexpr uint8_t DIR_READ = 0x80; // binary 10000000
 
 static constexpr uint8_t ID = 0x1E;
 
