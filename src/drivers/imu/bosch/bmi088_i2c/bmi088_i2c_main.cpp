@@ -50,9 +50,10 @@ void BMI088_I2C::print_usage()
 
 extern "C" int bmi088_i2c_main(int argc, char *argv[])
 {
+	PX4_ERR("bmi088 started on i2c");
 	int ch;
 	using ThisDriver = BMI088_I2C;
-	BusCLIArguments cli{false, true};
+	BusCLIArguments cli{true, false};
 	cli.type = 0;
 	cli.default_i2c_frequency = 400 * 1000;
 
