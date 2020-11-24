@@ -13,8 +13,11 @@ adc start
 # fi
 
 # Internal I2C BMI088
-bmi088_i2c -A -I -b 3 -a 0x18 -R 0 -f 400 start
-bmi088_i2c -G -I -b 3 -a 0x69 -R 0 -f 400 start
+if bmi088_i2c -A -I -b 3 -a 0x18 -R 0 -f 400 start
+then
+	sleep 4
+	bmi088_i2c -G -I -b 3 -a 0x69 -R 0 -f 400 start
+fi
 
 # Internal Baro
 bmp388 -I -b 3 -a 0x77 -f 400 start
