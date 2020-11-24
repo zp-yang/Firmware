@@ -38,7 +38,7 @@
 
 void BMI088_I2C::print_usage()
 {
-	PRINT_MODULE_USAGE_NAME("bmi088", "driver");
+	PRINT_MODULE_USAGE_NAME("bmi088_i2c", "driver");
 	PRINT_MODULE_USAGE_SUBCATEGORY("imu");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_PARAM_FLAG('A', "Accel", true);
@@ -50,21 +50,24 @@ void BMI088_I2C::print_usage()
 
 extern "C" int bmi088_i2c_main(int argc, char *argv[])
 {
-	PX4_ERR("bmi088 started on i2c");
+	// PX4_WARN("bmi088 started on i2c");
 	int ch;
 	using ThisDriver = BMI088_I2C;
 	BusCLIArguments cli{true, false};
-	cli.type = 0;
+	// cli.type = 0;
+	cli.i2c_address = 0x18;
 	cli.default_i2c_frequency = 400 * 1000;
 
 	while ((ch = cli.getopt(argc, argv, "AGR:")) != EOF) {
 		switch (ch) {
 		case 'A':
 			cli.type = DRV_ACC_DEVTYPE_BMI088;
+			cli.i2c_address = 0x18;
 			break;
 
 		case 'G':
 			cli.type = DRV_GYR_DEVTYPE_BMI088;
+			cli.i2c_address = 0x69;
 			break;
 
 		case 'R':
