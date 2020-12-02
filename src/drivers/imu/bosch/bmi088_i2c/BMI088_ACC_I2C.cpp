@@ -38,6 +38,7 @@ void BMI088_ACC_I2C::print_status()
 {
 	I2CSPIDriverBase::print_status();
 
+	PX4_INFO("__Accelerometer Status__");
 	PX4_INFO("FIFO empty interval: %d us (%.3f Hz)", _fifo_empty_interval_us, 1e6 / _fifo_empty_interval_us);
 
 	perf_print_counter(_bad_register_perf);
@@ -370,12 +371,11 @@ void BMI088_ACC_I2C::RegisterSetAndClearBits(Register reg, uint8_t setbits, uint
 	}
 }
 
-uint16_t BMI088_ACC_I2C::FIFOReadCount() // i2c modification of transfer()
+uint16_t BMI088_ACC_I2C::FIFOReadCount()
 {
 	// FIFO length registers FIFO_LENGTH_1 and FIFO_LENGTH_0 contain the 14 bit FIFO byte
 	uint8_t fifo_len_buf[3] {};
-	fifo_len_buf[0] = static_cast<uint8_t>(Register::FIFO_LENGTH_0) | DIR_READ;
-	// fifo_len_buf[1] dummy byte
+	fifo_len_buf[0] = static_cast<uint8_t>(Register::FIFO_LENGTH_0);
 
 	if (transfer(&fifo_len_buf[0], 1, &fifo_len_buf[0], sizeof(fifo_len_buf)) != PX4_OK) {
 		perf_count(_bad_transfer_perf);
@@ -398,7 +398,7 @@ uint16_t BMI088_ACC_I2C::FIFOReadCount() // i2c modification of transfer()
 bool BMI088_ACC_I2C::FIFORead(const hrt_abstime &timestamp_sample, uint8_t samples)
 {
 	FIFOTransferBuffer buffer{};
-	const size_t transfer_size = math::min(samples * sizeof(FIFO::DATA) + 4, FIFO::SIZE);
+	const size_t transfer_size = math::min(samples * sizeof(FIFO::DATA) + 3, FIFO::SIZE);
 
 	if (transfer((uint8_t *)&buffer, 1, (uint8_t *)&buffer, transfer_size) != PX4_OK) {
 		perf_count(_bad_transfer_perf);
@@ -427,7 +427,7 @@ bool BMI088_ACC_I2C::FIFORead(const hrt_abstime &timestamp_sample, uint8_t sampl
 	uint8_t *data_buffer = (uint8_t *)&buffer.f[0];
 	unsigned fifo_buffer_index = 0; // start of buffer
 
-	while (fifo_buffer_index < math::min(fifo_byte_counter, transfer_size - 4)) {
+	while (fifo_buffer_index < math::min(fifo_byte_counter, transfer_size - 3)) {
 		// look for header signature (first 6 bits) followed by two bits indicating the status of INT1 and INT2
 		switch (data_buffer[fifo_buffer_index] & 0xFC) {
 		case FIFO::header::sensor_data_frame: {
@@ -509,16 +509,15 @@ void BMI088_ACC_I2C::FIFOReset()
 void BMI088_ACC_I2C::UpdateTemperature()
 {
 	// stored in an 11-bit value in 2’s complement format
-	uint8_t temperature_buf[4] {};
-	temperature_buf[0] = static_cast<uint8_t>(Register::TEMP_MSB) | DIR_READ;
-	// temperature_buf[1] dummy byte
+	uint8_t temperature_buf[3] {};
+	temperature_buf[0] = static_cast<uint8_t>(Register::TEMP_MSB);
 
 	if (transfer(&temperature_buf[0], 1, &temperature_buf[0], sizeof(temperature_buf)) != PX4_OK) {
 		return;
 	}
 
-	const uint8_t TEMP_MSB = temperature_buf[2];
-	const uint8_t TEMP_LSB = temperature_buf[3];
+	const uint8_t TEMP_MSB = temperature_buf[1];
+	const uint8_t TEMP_LSB = temperature_buf[2];
 
 	// Datasheet 5.3.7: Register 0x22 – 0x23: Temperature sensor data
 	uint16_t Temp_uint11 = (TEMP_MSB * 8) + (TEMP_LSB / 32);

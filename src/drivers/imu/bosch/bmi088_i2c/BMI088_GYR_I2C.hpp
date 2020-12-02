@@ -24,14 +24,14 @@ private:
 	void exit_and_cleanup() override;
 
 	// Sensor configuration
-	static constexpr uint32_t GYRO_RATE{2000}; // 1600 Hz gyro
+	static constexpr uint32_t GYRO_RATE{1600}; // 1600 Hz gyro
 	static constexpr float FIFO_SAMPLE_DT{1e6f / GYRO_RATE};
 
 	static constexpr uint32_t FIFO_MAX_SAMPLES{math::min(FIFO::SIZE / sizeof(FIFO::DATA), sizeof(sensor_gyro_fifo_s::x) / sizeof(sensor_gyro_fifo_s::x[0]))};
 
 	// Transfer data
 	struct FIFOTransferBuffer {
-		uint8_t cmd{static_cast<uint8_t>(Register::FIFO_DATA) | DIR_READ};
+		uint8_t cmd{static_cast<uint8_t>(Register::FIFO_DATA)};
 		FIFO::DATA f[FIFO_MAX_SAMPLES] {};
 	};
 

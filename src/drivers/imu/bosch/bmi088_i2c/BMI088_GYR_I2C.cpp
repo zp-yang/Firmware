@@ -9,7 +9,7 @@ namespace Bosch::BMI088::Gyroscope
 
 BMI088_GYR_I2C::BMI088_GYR_I2C(I2CSPIBusOption bus_option, int bus, uint32_t device, enum Rotation rotation,
 						int bus_frequency, int address, spi_drdy_gpio_t drdy_gpio) :
-	BMI088_I2C(DRV_GYR_DEVTYPE_BMI088, "MI088 Gyro", bus_option, bus, device, address, bus_frequency, drdy_gpio),
+	BMI088_I2C(DRV_GYR_DEVTYPE_BMI088, "BMI088 Gyro", bus_option, bus, device, address, bus_frequency, drdy_gpio),
 	_px4_gyro(get_device_id(), ORB_PRIO_HIGH, rotation)
 {
 	if (drdy_gpio != 0) {
@@ -37,6 +37,7 @@ void BMI088_GYR_I2C::exit_and_cleanup()
 void BMI088_GYR_I2C::print_status()
 {
 	I2CSPIDriverBase::print_status();
+	PX4_INFO("__Gyroscope Status__");
 
 	PX4_INFO("FIFO empty interval: %d us (%.3f Hz)", _fifo_empty_interval_us, 1e6 / _fifo_empty_interval_us);
 
@@ -231,7 +232,7 @@ void BMI088_GYR_I2C::ConfigureGyro()
 void BMI088_GYR_I2C::ConfigureSampleRate(int sample_rate)
 {
 	if (sample_rate == 0) {
-		sample_rate = 1000; // default to 800 Hz
+		sample_rate = 800; // default to 800 Hz
 	}
 
 	// round down to nearest FIFO sample dt * SAMPLES_PER_TRANSFER

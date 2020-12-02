@@ -11,7 +11,7 @@ px4_add_board(
 		adc
 		barometer/bmp388
 		distance_sensor/vl53l0x
-		gps
+		#gps
 		imu/bosch/bmi088_i2c
 		optical_flow/pmw3901
 		pwm_out
@@ -20,12 +20,12 @@ px4_add_board(
 		#camera_feedback
 		commander
 		dataman
-		ekf2
+		#ekf2
 		events
 		land_detector
-		#landing_target_estimator
+		landing_target_estimator
 		load_mon
-		#local_position_estimator
+		local_position_estimator
 		logger
 		mavlink
 		mc_att_control
